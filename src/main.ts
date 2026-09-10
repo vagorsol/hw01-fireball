@@ -11,6 +11,9 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 import lambertVertSource from './shaders/lambert-vert.glsl?raw';
 import lambertFragSource from './shaders/lambert-frag.glsl?raw';
 
+import customVertSource from './shaders/custom-vert.glsl?raw';
+import customFragSource from './shaders/custom-frag.glsl?raw';
+
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
@@ -21,6 +24,7 @@ const controls = {
 let icosphere: Icosphere;
 let square: Square;
 let prevTesselations: number = 5;
+let time:number = 0;
 
 function loadScene() {
   icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
@@ -67,8 +71,14 @@ function main() {
     new Shader(gl.FRAGMENT_SHADER, lambertFragSource),
   ]);
 
+  const customShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, customVertSource),
+    new Shader(gl.FRAGMENT_SHADER, customFragSource),
+  ]);
+
   // This function will be called every frame
   function tick() {
+    time += 0.01;
     camera.update();
     stats.begin();
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
@@ -79,10 +89,11 @@ function main() {
       icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, prevTesselations);
       icosphere.create();
     }
-    renderer.render(camera, lambert, [
+    renderer.render(camera, customShader, [
       icosphere,
       // square,
-    ]);
+    ],time
+    );
     stats.end();
 
     // Tell the browser to call `tick` again whenever it renders a new frame
