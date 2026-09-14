@@ -1,4 +1,4 @@
-import {vec3} from 'gl-matrix';
+import {vec3, vec4} from 'gl-matrix';
 import Stats from 'stats-js';
 import * as DAT from 'dat.gui';
 import Icosphere from './geometry/Icosphere';
@@ -19,6 +19,8 @@ import customFragSource from './shaders/custom-frag.glsl?raw';
 const controls = {
   tesselations: 5,
   'Load Scene': loadScene, // A function pointer, essentially
+  'Primary Color': [255, 0, 0],
+  'Secondary Color': [255, 255, 0], 
 };
 
 let icosphere: Icosphere;
@@ -46,6 +48,8 @@ function main() {
   const gui = new DAT.GUI();
   gui.add(controls, 'tesselations', 0, 8).step(1);
   gui.add(controls, 'Load Scene');
+  gui.addColor(controls,'Primary Color');
+  gui.addColor(controls, 'Secondary Color');
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -92,7 +96,10 @@ function main() {
     renderer.render(camera, customShader, [
       icosphere,
       // square,
-    ],time
+    ],
+    vec4.fromValues(controls['Primary Color'][0] / 255.0, controls['Primary Color'][1] / 255.0, controls['Primary Color'][2] / 255.0, 1.0),
+    vec4.fromValues(controls['Secondary Color'][0] / 255.0, controls['Secondary Color'][1] / 255.0, controls['Secondary Color'][2] / 255.0, 1.0),
+    time
     );
     stats.end();
 
