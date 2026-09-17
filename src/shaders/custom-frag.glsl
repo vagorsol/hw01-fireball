@@ -20,6 +20,8 @@ out vec4 out_Col; // This is the final output color that you will see on your
 float hash(float p) { p = fract(p * 0.011); p *= p + 7.5; p *= p + p; return fract(p); }
 float hash(vec2 p) {vec3 p3 = fract(vec3(p.xyx) * 0.13); p3 += dot(p3, p3.yzx + 3.333); return fract((p3.x + p3.y) * p3.z); }                 
 
+float bias(float b, float t);
+float gain(float g, float t);
 float impulse(float k, float x);
 vec3 random3(vec3 p);
 float noise(vec3 p);
@@ -37,17 +39,29 @@ void main()
     float n = fbm(
         vec3(fs_Pos.x + sin(u_Time), fs_Pos.y + u_Time, fs_Pos.z),
         3, 1.0, 0.5);
+    n = gain(0.7, n); // increase contrast
     diffuseColor = mix(u_ColorPrimary, u_ColorSecondary, n);
 
     // linear gradient
     float gradientValue = impulse(0.3, fs_Pos.y);
     vec4 gradientColor = mix(u_ColorPrimary, u_ColorSecondary, gradientValue); 
 
-    //diffuseColor = gradientColor;
     diffuseColor = mix(diffuseColor, gradientColor, 0.35);
 
     // Compute final shaded color
     out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
+}
+
+float bias(float b, float t) {
+    return pow(t, log(b) / log(0.5));
+}
+
+float gain(float g, float t) {
+    if (t < 0.5) {
+        return bias(1.0 - g, 2.0 * t) / 2.0;
+    } else {
+        return 1.0 - bias(1.0 - g, 2.0 - 2.0 * t) / 2.0;
+    }
 }
 
 float impulse(float k, float x) {
