@@ -33,6 +33,7 @@ float hash(vec2 p) {vec3 p3 = fract(vec3(p.xyx) * 0.13); p3 += dot(p3, p3.yzx + 
 
 float noise(vec3 p);
 float fbm(vec3 p, int octaves, float freq, float amp);
+float triangle_wave(float x, float freq, float amp);
 
 void main()
 {
@@ -47,15 +48,22 @@ void main()
 
     vec4 modelposition = u_Model * vs_Pos;   // Temporarily store the transformed vertex positions for use below
 
-    float freq = 3.5;
+    // "Bobbing" animation
+    float sideDistort = triangle_wave(modelposition.y, 0.5 * cos(modelposition.y + 1.5 * u_Time) * sin(modelposition.y * 2.0), 0.9);
+    modelposition.y = modelposition.y + vs_Nor.y * 0.85 * sideDistort;
+
+    // Animation applied "uniformly" to entire icosphere
+    float freq = 4.5;
     float amp = 0.15;
     
     float wave = sin(modelposition.y * freq + u_Time * 2.0)
                   * cos(modelposition.x * freq + u_Time * 1.5);
                 
-    modelposition = modelposition + vs_Nor * amp * wave; // Apply noise to vertex positions
-    
-    modelposition.y = (modelposition.y >= 0.0) ? (0.5 * modelposition.y) + fbm(modelposition.xyz, 3, 1.0, 3.0) * modelposition.y : modelposition.y;
+    modelposition = modelposition + vs_Nor * amp * wave;    
+
+    // Flame top animation
+    float topNoise = fbm(modelposition.xyz, 3, 1.0, 3.0); 
+    modelposition.y = (modelposition.y >= 0.0) ? (0.25 * modelposition.y) + topNoise * vs_Nor.y : modelposition.y;
 
     fs_LightVec = lightPos - modelposition;  // Compute the direction in which the light source lies
 
@@ -87,4 +95,8 @@ float fbm(vec3 p, int octaves, float freq, float amp) {
         amp *= 0.5;
     }
     return value; 
+}
+
+float triangle_wave(float x, float freq, float amp) {
+    return abs(mod(x * freq, amp) - (0.5 * amp));
 }
