@@ -31,6 +31,7 @@ class ShaderProgram {
   unifColorPrimary: WebGLUniformLocation;
   unifColorSecondary: WebGLUniformLocation;
   unifTime: WebGLUniformLocation;
+  unifTexture: WebGLUniformLocation;
 
   constructor(shaders: Array<Shader>) {
     this.prog = gl.createProgram();
@@ -52,6 +53,7 @@ class ShaderProgram {
     this.unifColorPrimary = gl.getUniformLocation(this.prog, "u_ColorPrimary");
     this.unifColorSecondary = gl.getUniformLocation(this.prog, "u_ColorSecondary");
     this.unifTime       = gl.getUniformLocation(this.prog, "u_Time");
+    this.unifTexture = gl.getUniformLocation(this.prog, "u_Texture");
   }
 
   use() {
@@ -100,6 +102,13 @@ class ShaderProgram {
     this.use();
     if (this.unifTime !== -1) {
       gl.uniform1f(this.unifTime, time);
+    }
+  }
+
+  setTexture(texture: number) {
+    this.use();
+    if(this.unifTexture !== -1) {
+      gl.uniform1i(this.unifTexture, texture);
     }
   }
 

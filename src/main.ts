@@ -8,31 +8,46 @@ import Camera from './Camera';
 import {setGL} from './globals';
 import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 
-import lambertVertSource from './shaders/lambert-vert.glsl?raw';
-import lambertFragSource from './shaders/lambert-frag.glsl?raw';
-
 import customVertSource from './shaders/custom-vert.glsl?raw';
 import customFragSource from './shaders/custom-frag.glsl?raw';
+
+import bgVertSource from './shaders/bg-vert.glsl?raw';
+import bgFragSource from './shaders/bg-frag.glsl?raw';
 
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
   tesselations: 5,
-  'Load Scene': loadScene, // A function pointer, essentially
   'Primary Color': [255, 0, 0],
-  'Secondary Color': [255, 255, 0], 
+  'Secondary Color': [255, 255, 0],
+  'Sky Color': [102, 102, 255],
+  'Load Scene': loadScene, // A function pointer, essentially
+  'Reset Scene': resetScene,
 };
 
 let icosphere: Icosphere;
 let square: Square;
 let prevTesselations: number = 5;
-let time:number = 0;
+let time: number = 0;
 
 function loadScene() {
   icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
   icosphere.create();
   square = new Square(vec3.fromValues(0, 0, 0));
   square.create();
+}
+
+function resetScene() {
+  controls.tesselations = 5;
+  controls['Primary Color'] = [255, 0, 0];
+  controls['Secondary Color'] = [255, 255, 0];
+  controls['Sky Color'] = [102, 102, 255];
+
+  time = 0;
+}
+
+function toColor(color: number[]): vec4 {
+  return vec4.fromValues(color[0] / 255.0, color[1] / 255.0, color[2] / 255.0, 1.0);
 }
 
 function main() {
@@ -47,9 +62,11 @@ function main() {
   // Add controls to the gui
   const gui = new DAT.GUI();
   gui.add(controls, 'tesselations', 0, 8).step(1);
-  gui.add(controls, 'Load Scene');
   gui.addColor(controls,'Primary Color');
   gui.addColor(controls, 'Secondary Color');
+  gui.addColor(controls, 'Sky Color');
+  gui.add(controls, 'Load Scene');
+  gui.add(controls, 'Reset Scene');
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -70,14 +87,14 @@ function main() {
   renderer.setClearColor(0.2, 0.2, 0.2, 1);
   gl.enable(gl.DEPTH_TEST);
 
-  const lambert = new ShaderProgram([
-    new Shader(gl.VERTEX_SHADER, lambertVertSource),
-    new Shader(gl.FRAGMENT_SHADER, lambertFragSource),
-  ]);
-
   const customShader = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, customVertSource),
     new Shader(gl.FRAGMENT_SHADER, customFragSource),
+  ]);
+
+  const bgShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, bgVertSource),
+    new Shader(gl.FRAGMENT_SHADER, bgFragSource),
   ]);
 
   // This function will be called every frame
@@ -87,20 +104,32 @@ function main() {
     stats.begin();
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
+
     if(controls.tesselations != prevTesselations)
     {
       prevTesselations = controls.tesselations;
       icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, prevTesselations);
       icosphere.create();
     }
-    renderer.render(camera, customShader, [
-      icosphere,
-      // square,
-    ],
-    vec4.fromValues(controls['Primary Color'][0] / 255.0, controls['Primary Color'][1] / 255.0, controls['Primary Color'][2] / 255.0, 1.0),
-    vec4.fromValues(controls['Secondary Color'][0] / 255.0, controls['Secondary Color'][1] / 255.0, controls['Secondary Color'][2] / 255.0, 1.0),
-    time
-    );
+
+    // Background
+    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // renderer.clear();
+
+    gl.disable(gl.DEPTH_TEST);
+    renderer.render(camera, bgShader, [square], time);
+    bgShader.setGeometryColorPrimary(toColor(controls['Sky Color']));
+    bgShader.setGeometryColorSecondary(toColor(controls['Sky Color']));
+    gl.enable(gl.DEPTH_TEST);
+
+    // Flame
+    // gl.enable(gl.CULL_FACE);
+    // gl.disable(gl.DEPTH_TEST);
+    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    renderer.render(camera, customShader, [icosphere],time);
+    customShader.setGeometryColorPrimary(toColor(controls['Primary Color']));
+    customShader.setGeometryColorSecondary(toColor(controls['Secondary Color']))
+
     stats.end();
 
     // Tell the browser to call `tick` again whenever it renders a new frame

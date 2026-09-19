@@ -8,3 +8,5 @@ Viewed [here](https://github.com/CIS-5660-Fall-2026/hw01-fireball/blob/main/READ
 ## References
 - [Wave shader](https://www.mysimulator.uk/content/tutorials/webgl-shaders.html)
 - [Fractal Brownian noise](https://thebookofshaders.com/13/)
+- [Animated Worley noise](https://www.shadertoy.com/view/3d3fWN)
+- [Starfield](https://www.shadertoy.com/view/Md2SR3)
